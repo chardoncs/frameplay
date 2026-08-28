@@ -3,6 +3,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 pub use options::*;
 
 mod options;
+pub mod ticker;
 
 #[derive(Default)]
 pub struct Frameplay<T> {
@@ -11,6 +12,7 @@ pub struct Frameplay<T> {
 
     frame_time_reference: FrameTimeReference,
     frame_period: u32,
+    frame_rate: u32,
 }
 
 impl<T> Frameplay<T> {
@@ -21,7 +23,12 @@ impl<T> Frameplay<T> {
 
             frame_time_reference: opts.frame_time_reference,
             frame_period: 1000u32.checked_div(opts.frame_rate).unwrap_or(0),
+            frame_rate: opts.frame_rate,
         }
+    }
+
+    pub fn frame_rate(&self) -> u32 {
+        self.frame_rate
     }
 
     fn get_frame_time(reference: &FrameTimeReference) -> u128 {

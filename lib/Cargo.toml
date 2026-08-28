@@ -6,3 +6,11 @@ edition.workspace = true
 authors.workspace = true
 repository.workspace = true
 license.workspace = true
+
+[features]
+default = []
+
+async-tokio = ["tokio"]
+
+[dependencies]
+tokio = { version = "1", features = ["io-std", "sync", "time"], optional = true }
