@@ -83,8 +83,8 @@ async fn main() -> anyhow::Result<()> {
 
     ratatui::restore();
 
-    let _ = ticker_task.await;
-    let _ = term_event_task.await;
+    ticker_task.abort();
+    term_event_task.abort();
 
     result
 }
