@@ -98,13 +98,13 @@ where
         }
     }
 
-    pub async fn run(self, tx: tokio::sync::mpsc::Sender<T>) {
+    pub async fn run(self, tx: tokio::sync::broadcast::Sender<T>) {
         let mut interval = tokio::time::interval(self.frame_period);
 
         loop {
             interval.tick().await;
 
-            if tx.send(self.fp.get_frame().clone()).await.is_err() {
+            if tx.send(self.fp.get_frame().clone()).is_err() {
                 break;
             }
         }
