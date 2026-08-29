@@ -5,14 +5,19 @@ pub use options::*;
 mod options;
 pub mod ticker;
 
+/// A `Frameplay` is a repeater of a set of frames.
+///
+/// Thread-safe?: No
 #[derive(Default)]
 pub struct Frameplay<T> {
     frames: Vec<T>,
-    pivot: u128,
+    pivot: Duration,
 
     frame_time_reference: FrameTimeReference,
-    frame_period: u32,
+    frame_period: Duration,
     frame_rate: u32,
+
+    frame_index: usize,
 }
 
 impl<T> Frameplay<T> {
@@ -22,46 +27,65 @@ impl<T> Frameplay<T> {
             pivot: Self::get_frame_time(&opts.frame_time_reference),
 
             frame_time_reference: opts.frame_time_reference,
-            frame_period: 1000u32.checked_div(opts.frame_rate).unwrap_or(0),
+            frame_period: Duration::from_millis(
+                1000u32.checked_div(opts.frame_rate).unwrap_or(0).into(),
+            ),
             frame_rate: opts.frame_rate,
+
+            frame_index: 0,
         }
     }
 
-    pub fn frame_rate(&self) -> u32 {
-        self.frame_rate
-    }
-
-    fn get_frame_time(reference: &FrameTimeReference) -> u128 {
+    fn get_frame_time(reference: &FrameTimeReference) -> Duration {
         match reference {
-            FrameTimeReference::Absolute => 0,
+            FrameTimeReference::Absolute | FrameTimeReference::Relative => Duration::ZERO,
             FrameTimeReference::StartTime => SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap_or(Duration::ZERO)
-                .as_millis(),
-            FrameTimeReference::Custom(ts) => *ts,
+                .unwrap_or(Duration::ZERO),
+            FrameTimeReference::Custom(ts) => ts.clone(),
         }
     }
 
-    pub fn get_frame(&self) -> &T {
+    pub fn peek_frame(&self) -> &T {
+        &self.frames[self.frame_index]
+    }
+
+    pub fn get_frame(&mut self) -> &T {
         let cur_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::ZERO)
-            .as_millis();
+            .unwrap_or(Duration::ZERO);
 
-        let index = (((cur_time.wrapping_sub(self.pivot)) as usize)
-            .checked_div(self.frame_period as usize)
-            .unwrap_or(0))
-            % self.frames.len();
+        match self.frame_time_reference {
+            FrameTimeReference::Relative => match self.pivot {
+                Duration::ZERO => self.pivot = cur_time,
+                pivot if cur_time - pivot >= self.frame_period => {
+                    self.frame_index = (self.frame_index + 1) % self.frames.len();
+                    self.pivot = cur_time;
+                }
+                _ => {}
+            },
+            _ => {
+                self.frame_index = ((cur_time - self.pivot)
+                    .as_millis()
+                    .checked_div(self.frame_period.as_millis())
+                    .unwrap_or(0) as usize)
+                    % self.frames.len();
+            }
+        }
 
-        &self.frames[index]
+        self.peek_frame()
     }
 
     pub fn reset(&mut self) {
         self.pivot = Self::get_frame_time(&self.frame_time_reference);
     }
 
-    pub fn frame_period(&self) -> u32 {
-        self.frame_period
+    pub fn frame_period(&self) -> &Duration {
+        &self.frame_period
+    }
+
+    pub fn frame_rate(&self) -> u32 {
+        self.frame_rate
     }
 }
 

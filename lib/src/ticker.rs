@@ -40,7 +40,7 @@ where
         let thread_tx = tx.clone();
         let frame_period = self.frame_period;
         let stop = self.stop.clone();
-        let fp = std::mem::replace(&mut self.fp, Frameplay::new(Vec::new(), crate::FrameplayOptions::default()));
+        let mut fp = std::mem::replace(&mut self.fp, Frameplay::new(Vec::new(), crate::FrameplayOptions::default()));
 
         self.handle = Some(thread::spawn(move || {
             while !stop.load(Ordering::Relaxed) {
@@ -98,7 +98,7 @@ where
         }
     }
 
-    pub async fn run(self, tx: tokio::sync::broadcast::Sender<T>) {
+    pub async fn run(&mut self, tx: tokio::sync::broadcast::Sender<T>) {
         let mut interval = tokio::time::interval(self.frame_period);
 
         loop {

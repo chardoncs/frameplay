@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 pub struct FrameplayOptions {
     pub frame_time_reference: FrameTimeReference,
     pub frame_rate: u32,
@@ -14,8 +16,9 @@ impl Default for FrameplayOptions {
 
 #[derive(Default)]
 pub enum FrameTimeReference {
-    #[default]
     Absolute,
     StartTime,
-    Custom(u128),
+    #[default]
+    Relative,
+    Custom(Duration),
 }

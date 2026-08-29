@@ -45,14 +45,16 @@ async fn main() -> anyhow::Result<()> {
     let (frame_tx, mut frame_rx) = broadcast::channel::<String>(frame_rate as usize);
     let (quit_tx, mut quit_rx) = broadcast::channel::<()>(1);
 
-    let ticker = AsyncTicker::new(Frameplay::new(
+    let mut ticker = AsyncTicker::new(Frameplay::new(
         frames,
         FrameplayOptions {
             frame_rate,
             ..Default::default()
         },
     ));
-    let ticker_task = tokio::spawn(ticker.run(frame_tx));
+    let ticker_task = tokio::spawn(async move {
+        ticker.run(frame_tx).await;
+    });
 
     let term_event_task = tokio::spawn(async move {
         loop {
