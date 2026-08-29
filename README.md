@@ -1,6 +1,6 @@
 # Frameplay
 
-CLI frame management library
+A simple frame repeater
 
 > [!NOTE]
 >
