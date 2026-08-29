@@ -21,7 +21,7 @@ tokio = { version = "1", features = ["full"] }
 members = ["lib"]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 description = "Simple frame repeater and library"
 edition = "2024"
 authors = ["Charles Dong <chardon_cs@proton.me>"]
