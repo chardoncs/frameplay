@@ -24,7 +24,7 @@ impl<T> Frameplay<T> {
 
             frame_time_reference: opts.frame_time_reference,
             frame_period: Duration::from_millis(
-                1000u32.checked_div(opts.frame_rate).unwrap_or(0).into(),
+                1000u32.checked_div(opts.frame_rate.max(1)).unwrap_or(0).into(),
             ),
             frame_rate: opts.frame_rate,
         }
