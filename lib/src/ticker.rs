@@ -40,7 +40,7 @@ where
         let thread_tx = tx.clone();
         let frame_period = self.frame_period;
         let stop = self.stop.clone();
-        let mut fp = std::mem::replace(&mut self.fp, Frameplay::new(Vec::new(), crate::FrameplayOptions::default()));
+        let fp = std::mem::replace(&mut self.fp, Frameplay::new(Vec::new(), crate::FrameplayOptions::default()));
 
         self.handle = Some(thread::spawn(move || {
             while !stop.load(Ordering::Relaxed) {

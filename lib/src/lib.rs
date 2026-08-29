@@ -6,8 +6,6 @@ mod options;
 pub mod ticker;
 
 /// A `Frameplay` is a repeater of a set of frames.
-///
-/// Thread-safe?: No
 #[derive(Default)]
 pub struct Frameplay<T> {
     frames: Vec<T>,
@@ -16,8 +14,6 @@ pub struct Frameplay<T> {
     frame_time_reference: FrameTimeReference,
     frame_period: Duration,
     frame_rate: u32,
-
-    frame_index: usize,
 }
 
 impl<T> Frameplay<T> {
@@ -31,14 +27,12 @@ impl<T> Frameplay<T> {
                 1000u32.checked_div(opts.frame_rate).unwrap_or(0).into(),
             ),
             frame_rate: opts.frame_rate,
-
-            frame_index: 0,
         }
     }
 
     fn get_frame_time(reference: &FrameTimeReference) -> Duration {
         match reference {
-            FrameTimeReference::Absolute | FrameTimeReference::Relative => Duration::ZERO,
+            FrameTimeReference::Absolute => Duration::ZERO,
             FrameTimeReference::StartTime => SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or(Duration::ZERO),
@@ -46,34 +40,18 @@ impl<T> Frameplay<T> {
         }
     }
 
-    pub fn peek_frame(&self) -> &T {
-        &self.frames[self.frame_index]
-    }
-
-    pub fn get_frame(&mut self) -> &T {
+    pub fn get_frame(&self) -> &T {
         let cur_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or(Duration::ZERO);
 
-        match self.frame_time_reference {
-            FrameTimeReference::Relative => match self.pivot {
-                Duration::ZERO => self.pivot = cur_time,
-                pivot if cur_time - pivot >= self.frame_period => {
-                    self.frame_index = (self.frame_index + 1) % self.frames.len();
-                    self.pivot = cur_time;
-                }
-                _ => {}
-            },
-            _ => {
-                self.frame_index = ((cur_time - self.pivot)
-                    .as_millis()
-                    .checked_div(self.frame_period.as_millis())
-                    .unwrap_or(0) as usize)
-                    % self.frames.len();
-            }
-        }
+        let frame_index = ((cur_time - self.pivot)
+            .as_millis()
+            .checked_div(self.frame_period.as_millis())
+            .unwrap_or(0) as usize)
+            % self.frames.len();
 
-        self.peek_frame()
+        &self.frames[frame_index]
     }
 
     pub fn reset(&mut self) {
