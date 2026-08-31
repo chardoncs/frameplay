@@ -5,7 +5,7 @@ use std::{
 };
 
 use clap::Parser;
-use frameplay_lib::{ticker::AsyncTicker, Frameplay, FrameplayOptions};
+use frameplay::{ticker::AsyncTicker, Frameplay, FrameplayOptions};
 use ratatui::crossterm::event;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
