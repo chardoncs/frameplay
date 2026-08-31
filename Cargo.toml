@@ -1,6 +1,6 @@
 [package]
 name = "frameplay"
-description = "Simple frame repeater (CLI)"
+description = "Simple frame repeater (Library)"
 
 version.workspace = true
 edition.workspace = true
@@ -8,14 +8,13 @@ authors.workspace = true
 repository.workspace = true
 license.workspace = true
 
+[features]
+default = []
+
+async-tokio = ["tokio"]
+
 [dependencies]
-anyhow = "1.0.104"
-clap = { version = "4.6.6", features = ["derive"] }
-frameplay-lib = { path = "./lib", version = "0.1", features = ["async-tokio"] }
-ratatui = "0.30.2"
-serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["io-std", "sync", "time"], optional = true }
 
 [workspace]
 members = ["lib"]
