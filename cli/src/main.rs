@@ -49,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
         frames,
         FrameplayOptions {
             frame_rate,
+            frame_time_reference: frameplay::FrameTimeReference::StartTime,
             ..Default::default()
         },
     ));
