@@ -1,7 +1,7 @@
 use std::sync::{
+    Arc,
     atomic::{AtomicBool, Ordering},
     mpsc::{self, Receiver, Sender},
-    Arc,
 };
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
@@ -24,11 +24,11 @@ where
     T: Clone + Send + 'static,
 {
     pub fn new(fp: Frameplay<T>) -> Self {
-        let frame_rate = fp.frame_rate();
+        let frame_period = *fp.frame_period();
 
         Self {
             fp,
-            frame_period: Duration::from_secs_f64(1.0 / frame_rate.max(1) as f64),
+            frame_period,
             tx: None,
             stop: Arc::new(AtomicBool::new(false)),
             handle: None,
@@ -40,7 +40,10 @@ where
         let thread_tx = tx.clone();
         let frame_period = self.frame_period;
         let stop = self.stop.clone();
-        let fp = std::mem::replace(&mut self.fp, Frameplay::new(Vec::new(), crate::FrameplayOptions::default()));
+        let fp = std::mem::replace(
+            &mut self.fp,
+            Frameplay::new(Vec::new(), crate::FrameplayOptions::default()),
+        );
 
         self.handle = Some(thread::spawn(move || {
             while !stop.load(Ordering::Relaxed) {
@@ -90,12 +93,9 @@ where
     T: Clone,
 {
     pub fn new(fp: Frameplay<T>) -> Self {
-        let frame_rate = fp.frame_rate();
+        let frame_period = *fp.frame_period();
 
-        Self {
-            fp,
-            frame_period: Duration::from_secs_f64(1.0 / frame_rate.max(1) as f64),
-        }
+        Self { fp, frame_period }
     }
 
     pub async fn run(&mut self, tx: tokio::sync::broadcast::Sender<T>) {
