@@ -14,7 +14,7 @@ impl Default for FrameplayOptions {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub enum FrameTimeReference {
     #[default]
     Absolute,

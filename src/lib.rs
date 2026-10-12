@@ -5,10 +5,9 @@ pub use options::*;
 mod options;
 pub mod ticker;
 
-/// A `Frameplay` is a repeater of a set of frames.
-#[derive(Default)]
-pub struct Frameplay<T> {
-    frames: Vec<T>,
+/// A helper struct for tracking current frame index 
+pub struct FrameIndexer {
+    frame_count: usize,
     pivot: Duration,
 
     frame_time_reference: FrameTimeReference,
@@ -16,10 +15,10 @@ pub struct Frameplay<T> {
     frame_rate: u32,
 }
 
-impl<T> Frameplay<T> {
-    pub fn new(value: impl IntoIterator<Item = T>, opts: FrameplayOptions) -> Self {
+impl FrameIndexer {
+    pub fn new(frame_count: usize, opts: FrameplayOptions) -> Self {
         Self {
-            frames: value.into_iter().collect(),
+            frame_count,
             pivot: Self::get_frame_time(&opts.frame_time_reference),
 
             frame_time_reference: opts.frame_time_reference,
@@ -33,6 +32,12 @@ impl<T> Frameplay<T> {
         }
     }
 
+    fn frame_clock() -> Duration {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::ZERO)
+    }
+
     fn get_frame_time(reference: &FrameTimeReference) -> Duration {
         match reference {
             FrameTimeReference::Absolute => Duration::ZERO,
@@ -41,28 +46,20 @@ impl<T> Frameplay<T> {
         }
     }
 
-    fn frame_clock() -> Duration {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::ZERO)
-    }
-
-    pub fn get_frame(&self) -> &T {
+    pub fn get_cur_index(&self) -> usize {
         let cur_time = Self::frame_clock();
 
-        let frame_index = ((cur_time.saturating_sub(self.pivot))
+        ((cur_time.saturating_sub(self.pivot))
             .as_millis()
             .checked_div(self.frame_period.as_millis())
             .unwrap_or(0) as usize)
-            % self.frames.len();
-
-        &self.frames[frame_index]
+            % self.frame_count
     }
 
     /// Duration until the frame advances to the next one, or `None` when the
     /// frame never changes (fewer than two frames or a zero frame period).
     pub fn time_to_next_frame(&self) -> Option<Duration> {
-        if self.frames.len() < 2 || self.frame_period.is_zero() {
+        if self.frame_count < 2 || self.frame_period.is_zero() {
             return None;
         }
 
@@ -83,6 +80,45 @@ impl<T> Frameplay<T> {
 
     pub fn frame_rate(&self) -> u32 {
         self.frame_rate
+    }
+}
+
+/// A `Frameplay` is a repeater of a set of frames.
+pub struct Frameplay<T> {
+    frames: Vec<T>,
+    indexer: FrameIndexer,
+}
+
+impl<T> Frameplay<T> {
+    pub fn new(value: impl IntoIterator<Item = T>, opts: FrameplayOptions) -> Self {
+        let frames: Vec<_> = value.into_iter().collect();
+
+        Self {
+            indexer: FrameIndexer::new(frames.len(), opts),
+            frames,
+        }
+    }
+
+    pub fn get_frame(&self) -> &T {
+        &self.frames[self.indexer.get_cur_index()]
+    }
+
+    /// Duration until the frame advances to the next one, or `None` when the
+    /// frame never changes (fewer than two frames or a zero frame period).
+    pub fn time_to_next_frame(&self) -> Option<Duration> {
+        self.indexer.time_to_next_frame()
+    }
+
+    pub fn reset(&mut self) {
+        self.indexer.reset();
+    }
+
+    pub fn frame_period(&self) -> &Duration {
+        &self.indexer.frame_period
+    }
+
+    pub fn frame_rate(&self) -> u32 {
+        self.indexer.frame_rate
     }
 }
 
