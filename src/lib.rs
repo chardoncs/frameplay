@@ -5,7 +5,8 @@ pub use options::*;
 mod options;
 pub mod ticker;
 
-/// A helper struct for tracking current frame index 
+/// A helper struct for tracking current frame index
+#[derive(Clone)]
 pub struct FrameIndexer {
     frame_count: usize,
     pivot: Duration,
@@ -119,6 +120,11 @@ impl<T> Frameplay<T> {
 
     pub fn frame_rate(&self) -> u32 {
         self.indexer.frame_rate
+    }
+
+    /// Consume the `Frameplay`, returning its frame indexer and its frames.
+    pub fn into_parts(self) -> (FrameIndexer, Vec<T>) {
+        (self.indexer, self.frames)
     }
 }
 
